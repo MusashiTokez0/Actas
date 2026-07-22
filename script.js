@@ -90,51 +90,72 @@ marcaSelect.addEventListener("change", function () {
 function replicarValores() {
     if (!replicarCheckbox || !replicarCheckbox.checked) return;
 
-    const dispositivoVal = dispositivoEntregaSelect.value;
-    const otroDispositivoVal = otroDispositivoEntregaInput.value;
-    const marcaVal = marcaSelect.value;
-    const otraMarcaVal = otraMarcaInput.value;
-    const modeloVal = document.getElementById("Modelo").value;
-    const serialVal = document.getElementById("Serial").value;
+    const tipo = tipoSelect.value;
 
-    const dispositivosExtra = document.querySelectorAll(".dispositivo-extra");
-    const marcasExtra = document.querySelectorAll(".marca-extra");
-    const modelosExtra = document.querySelectorAll(".modelo-extra");
-    const serialsExtra = document.querySelectorAll(".serial-extra");
+    if (tipo === "Acta De Entrega") {
+        const dispositivoVal = dispositivoEntregaSelect.value;
+        const otroDispositivoVal = otroDispositivoEntregaInput.value;
+        const marcaVal = marcaSelect.value;
+        const otraMarcaVal = otraMarcaInput.value;
+        const modeloVal = document.getElementById("Modelo").value;
+        const serialVal = document.getElementById("Serial").value;
 
-    dispositivosExtra.forEach(el => {
-        el.value = dispositivoVal;
-        el.dispatchEvent(new Event("change"));
-        if (dispositivoVal === "Otro") {
-            const otraInput = el.parentElement.querySelector(".otro-dispositivo-extra-input");
-            if (otraInput) otraInput.value = otroDispositivoVal;
-        }
-    });
+        const dispositivosExtra = document.querySelectorAll(".dispositivo-extra");
+        const marcasExtra = document.querySelectorAll(".marca-extra");
+        const modelosExtra = document.querySelectorAll(".modelo-extra");
+        const serialsExtra = document.querySelectorAll(".serial-extra");
 
-    marcasExtra.forEach(el => {
-        el.value = marcaVal;
-        const otraInput = el.parentElement.querySelector(".otra-marca-extra-input");
-        if (marcaVal === "Otra") {
-            otraInput.style.display = "block";
-            otraInput.required = true;
-            otraInput.value = otraMarcaVal;
-        } else {
-            otraInput.style.display = "none";
-            otraInput.required = false;
-            otraInput.value = "";
-        }
-    });
+        dispositivosExtra.forEach(el => {
+            el.value = dispositivoVal;
+            el.dispatchEvent(new Event("change"));
+            if (dispositivoVal === "Otro") {
+                const otraInput = el.parentElement.querySelector(".otro-dispositivo-extra-input");
+                if (otraInput) otraInput.value = otroDispositivoVal;
+            }
+        });
 
-    modelosExtra.forEach(el => {
-        el.value = modeloVal;
-    });
+        marcasExtra.forEach(el => {
+            el.value = marcaVal;
+            const otraInput = el.parentElement.querySelector(".otra-marca-extra-input");
+            if (marcaVal === "Otra") {
+                otraInput.style.display = "block";
+                otraInput.required = true;
+                otraInput.value = otraMarcaVal;
+            } else {
+                otraInput.style.display = "none";
+                otraInput.required = false;
+                otraInput.value = "";
+            }
+        });
 
-    serialsExtra.forEach(el => {
-        el.value = serialVal;
-    });
+        modelosExtra.forEach(el => {
+            el.value = modeloVal;
+        });
+
+        serialsExtra.forEach(el => {
+            el.value = serialVal;
+        });
+    }
+
+    if (tipo === "Acta De Devolucion") {
+        const equipoVal = document.getElementById("equipoDevolucion").value;
+        const modeloVal = document.getElementById("modeloDevolucion").value;
+        const serialVal = document.getElementById("serialDevolucion").value;
+
+        document.querySelectorAll(".equipo-devolucion-extra").forEach(el => {
+            el.value = equipoVal;
+        });
+        document.querySelectorAll(".modelo-devolucion-extra").forEach(el => {
+            el.value = modeloVal;
+        });
+        document.querySelectorAll(".serial-devolucion-extra").forEach(el => {
+            el.value = serialVal;
+        });
+    }
 }
 
 function actualizarEquiposAdicionales() {
+    const tipo = tipoSelect.value;
     const cantidad = parseInt(cantidadInput.value) || 1;
     equiposAdicionalesContainer.innerHTML = "";
 
@@ -151,58 +172,97 @@ function actualizarEquiposAdicionales() {
     for (let i = 2; i <= cantidad; i++) {
         const div = document.createElement("div");
         div.className = "equipo-extra-card";
-        div.innerHTML = `
-            <h3>Equipo ${i}</h3>
-            <div class="grid">
-                <div>
-                    <label>Equipo</label>
-                    <select class="dispositivo-extra" data-index="${i}" required>
-                        <option value="" disabled selected>Seleccione un equipo</option>
-                        <option value="PC">PC</option>
-                        <option value="Notebook">Notebook</option>
-                        <option value="Monitor">Monitor</option>
-                        <option value="All-in-One">All-in-One</option>
-                        <option value="Impresora">Impresora</option>
-                        <option value="Otro">Otro equipo</option>
-                    </select>
-                    <input type="text" class="otro-dispositivo-extra-input" data-index="${i}" placeholder="Especifique equipo"
-                        style="display: none; margin-top: 10px;">
+
+        if (tipo === "Acta De Devolucion") {
+            div.innerHTML = `
+                <h3>Equipo ${i}</h3>
+                <div class="grid">
+                    <div>
+                        <label>Equipo</label>
+                        <input type="text" class="equipo-devolucion-extra" data-index="${i}" required>
+                    </div>
+                    <div>
+                        <label>Modelo</label>
+                        <input type="text" class="modelo-devolucion-extra" data-index="${i}" required>
+                    </div>
+                    <div>
+                        <label>Serial</label>
+                        <input type="text" class="serial-devolucion-extra" data-index="${i}" required>
+                    </div>
                 </div>
-                <div>
-                    <label>Marca</label>
-                    <select class="marca-extra" data-index="${i}" required>
-                        <option value="" disabled selected>Seleccione una marca</option>
-                        <option value="Lenovo">Lenovo</option>
-                        <option value="HP">HP</option>
-                        <option value="Dell">Dell</option>
-                        <option value="Apple">Apple</option>
-                        <option value="Asus">Asus</option>
-                        <option value="Acer">Acer</option>
-                        <option value="MSI">MSI</option>
-                        <option value="Otra">Otra marca</option>
-                    </select>
-                    <input type="text" class="otra-marca-extra-input" data-index="${i}" placeholder="Especifique marca"
-                        style="display: none; margin-top: 10px;">
+            `;
+        } else {
+            div.innerHTML = `
+                <h3>Equipo ${i}</h3>
+                <div class="grid">
+                    <div>
+                        <label>Equipo</label>
+                        <select class="dispositivo-extra" data-index="${i}" required>
+                            <option value="" disabled selected>Seleccione un equipo</option>
+                            <option value="PC">PC</option>
+                            <option value="Notebook">Notebook</option>
+                            <option value="Monitor">Monitor</option>
+                            <option value="All-in-One">All-in-One</option>
+                            <option value="Impresora">Impresora</option>
+                            <option value="Otro">Otro equipo</option>
+                        </select>
+                        <input type="text" class="otro-dispositivo-extra-input" data-index="${i}" placeholder="Especifique equipo"
+                            style="display: none; margin-top: 10px;">
+                    </div>
+                    <div>
+                        <label>Marca</label>
+                        <select class="marca-extra" data-index="${i}" required>
+                            <option value="" disabled selected>Seleccione una marca</option>
+                            <option value="Lenovo">Lenovo</option>
+                            <option value="HP">HP</option>
+                            <option value="Dell">Dell</option>
+                            <option value="Apple">Apple</option>
+                            <option value="Asus">Asus</option>
+                            <option value="Acer">Acer</option>
+                            <option value="MSI">MSI</option>
+                            <option value="Otra">Otra marca</option>
+                        </select>
+                        <input type="text" class="otra-marca-extra-input" data-index="${i}" placeholder="Especifique marca"
+                            style="display: none; margin-top: 10px;">
+                    </div>
+                    <div>
+                        <label>Modelo</label>
+                        <input type="text" class="modelo-extra" data-index="${i}" required>
+                    </div>
+                    <div>
+                        <label>Serial</label>
+                        <input type="text" class="serial-extra" data-index="${i}" required>
+                    </div>
+                    <div>
+                        <label>PIN</label>
+                        <input type="text" class="pin-extra" data-index="${i}">
+                    </div>
+                    <div class="nombre-equipo-extra-container" style="display: none;">
+                        <label>Nombre Equipo</label>
+                        <input type="text" class="nombre-equipo-extra" data-index="${i}">
+                    </div>
                 </div>
-                <div>
-                    <label>Modelo</label>
-                    <input type="text" class="modelo-extra" data-index="${i}" required>
-                </div>
-                <div>
-                    <label>Serial</label>
-                    <input type="text" class="serial-extra" data-index="${i}" required>
-                </div>
-                <div>
-                    <label>PIN</label>
-                    <input type="text" class="pin-extra" data-index="${i}">
-                </div>
-                <div class="nombre-equipo-extra-container" style="display: none;">
-                    <label>Nombre Equipo</label>
-                    <input type="text" class="nombre-equipo-extra" data-index="${i}">
-                </div>
-            </div>
-        `;
+            `;
+        }
+
         equiposAdicionalesContainer.appendChild(div);
+
+        if (tipo === "Acta De Devolucion") {
+            const inputs = div.querySelectorAll("input");
+            inputs.forEach(input => {
+                input.addEventListener("input", function () {
+                    if (replicarCheckbox.checked) {
+                        replicarCheckbox.checked = false;
+                    }
+                });
+                input.addEventListener("change", function () {
+                    if (replicarCheckbox.checked) {
+                        replicarCheckbox.checked = false;
+                    }
+                });
+            });
+            continue;
+        }
 
         const selectDispositivo = div.querySelector(".dispositivo-extra");
         const otroDispositivoExtra = div.querySelector(".otro-dispositivo-extra-input");
@@ -276,6 +336,9 @@ marcaSelect.addEventListener("change", replicarValores);
 otraMarcaInput.addEventListener("input", replicarValores);
 document.getElementById("Modelo").addEventListener("input", replicarValores);
 document.getElementById("Serial").addEventListener("input", replicarValores);
+document.getElementById("equipoDevolucion").addEventListener("input", replicarValores);
+document.getElementById("modeloDevolucion").addEventListener("input", replicarValores);
+document.getElementById("serialDevolucion").addEventListener("input", replicarValores);
 
 function formatearFecha(fechaStr) {
     if (!fechaStr) return "";
@@ -291,14 +354,11 @@ const camposPrestamo = document.querySelectorAll(".campo-prestamo");
 const camposDevolucion = document.querySelectorAll(".campo-devolucion");
 
 tipoSelect.addEventListener("change", function () {
-    // Ocultar todo primero
     const todosLosCampos = [...camposEquipo, ...camposComponentes, ...camposPrestamo, ...camposDevolucion];
     todosLosCampos.forEach(campo => campo.style.display = "none");
 
-    // Mostrar según selección
     if (this.value === "Acta De Entrega") {
         camposEquipo.forEach(campo => {
-            // Skip the Nombre del Equipo parent container
             if (campo === nombreEquipoInput.parentElement) {
                 return;
             }
@@ -314,7 +374,6 @@ tipoSelect.addEventListener("change", function () {
             }
         });
 
-        // Toggle required and visibility for Nombre del Equipo based on selected device
         const dispVal = dispositivoEntregaSelect.value;
         if (dispVal === "PC" || dispVal === "Notebook" || dispVal === "All-in-One") {
             nombreEquipoInput.parentElement.style.display = "block";
@@ -331,6 +390,16 @@ tipoSelect.addEventListener("change", function () {
             camposPrestamo.forEach(campo => campo.style.display = "block");
         } else if (this.value === "Acta De Devolucion") {
             camposDevolucion.forEach(campo => campo.style.display = "block");
+            cantidadInput.parentElement.style.display = "block";
+            const cantidad = parseInt(cantidadInput.value) || 1;
+            if (cantidad > 1) {
+                equiposAdicionalesContainer.style.display = "block";
+                document.querySelector(".replicar-container").style.display = "flex";
+            } else {
+                equiposAdicionalesContainer.style.display = "none";
+                document.querySelector(".replicar-container").style.display = "none";
+            }
+            actualizarEquiposAdicionales();
         }
     }
 });
@@ -380,7 +449,6 @@ formulario.addEventListener("submit", function (e) {
     if (tipo === "Acta De Entrega") {
         const cantidad = parseInt(cantidadInput.value) || 1;
 
-        // El primer equipo
         let dispositivo1 = document.getElementById("dispositivoEntrega").value;
         if (dispositivo1 === "Otro") {
             dispositivo1 = document.getElementById("otroDispositivoEntrega").value;
@@ -398,7 +466,6 @@ formulario.addEventListener("submit", function (e) {
             NombreEquipo: document.getElementById("nombreEquipo").value
         });
 
-        // Equipos adicionales
         if (cantidad > 1) {
             const cards = document.querySelectorAll(".equipo-extra-card");
             cards.forEach(card => {
@@ -420,6 +487,28 @@ formulario.addEventListener("submit", function (e) {
                 });
             });
         }
+    } else if (tipo === "Acta De Devolucion") {
+        const cantidad = parseInt(cantidadInput.value) || 1;
+        equipos.push({
+            Equipo: document.getElementById("equipoDevolucion").value,
+            Modelo: document.getElementById("modeloDevolucion").value,
+            Serial: document.getElementById("serialDevolucion").value
+        });
+
+        if (cantidad > 1) {
+            document.querySelectorAll(".equipo-devolucion-extra").forEach((equipoInput, index) => {
+                const modeloInput = document.querySelectorAll(".modelo-devolucion-extra")[index];
+                const serialInput = document.querySelectorAll(".serial-devolucion-extra")[index];
+
+                if (equipoInput.value || (modeloInput && modeloInput.value) || (serialInput && serialInput.value)) {
+                    equipos.push({
+                        Equipo: equipoInput.value,
+                        Modelo: modeloInput ? modeloInput.value : "",
+                        Serial: serialInput ? serialInput.value : ""
+                    });
+                }
+            });
+        }
     }
 
     const registro = {
@@ -431,31 +520,25 @@ formulario.addEventListener("submit", function (e) {
         Tecnico: document.getElementById("Tecnico").value,
         Tipo: tipo,
 
-        // Campos Acta De Entrega (root levels for backward compatibility)
-        DispositivoEntrega: equipos[0] ? equipos[0].Dispositivo : "",
-        Marca: equipos[0] ? equipos[0].Marca : "",
-        Modelo: equipos[0] ? equipos[0].Modelo : "",
-        Serial: equipos[0] ? equipos[0].Serial : "",
-        Pin: equipos[0] ? equipos[0].Pin : "",
-        NombreEquipo: equipos[0] ? equipos[0].NombreEquipo : "",
+        DispositivoEntrega: equipos[0] ? (equipos[0].Dispositivo || "") : "",
+        Marca: equipos[0] ? (equipos[0].Marca || "") : "",
+        Modelo: equipos[0] ? (equipos[0].Modelo || "") : "",
+        Serial: equipos[0] ? (equipos[0].Serial || "") : "",
+        Pin: equipos[0] ? (equipos[0].Pin || "") : "",
+        NombreEquipo: equipos[0] ? (equipos[0].NombreEquipo || "") : "",
+        EquipoDevolucion: equipos[0] ? (equipos[0].Equipo || "") : "",
+        ModeloDevolucion: equipos[0] ? (equipos[0].Modelo || "") : "",
+        SerialDevolucion: equipos[0] ? (equipos[0].Serial || "") : "",
 
-        // Todos los equipos
         equipos: equipos,
 
-        // Campos Acta Componentes
         Dispositivo: document.getElementById("dispositivo").value,
         ModeloComponente: document.getElementById("modeloComponente").value,
         SerialComponente: document.getElementById("serialComponente").value,
 
-        // Campos Acta Prestamo
         FechaDevolucion: document.getElementById("fechaDevolucion").value,
         DispositivoPrestamo: document.getElementById("dispositivoPrestamo").value,
         SerialPrestamo: document.getElementById("serialPrestamo").value,
-
-        // Campos Acta De Devolucion
-        EquipoDevolucion: document.getElementById("equipoDevolucion").value,
-        ModeloDevolucion: document.getElementById("modeloDevolucion").value,
-        SerialDevolucion: document.getElementById("serialDevolucion").value,
 
         numeroActa: document.getElementById("numeroActa").value,
         observaciones: document.getElementById("observaciones").value
@@ -542,10 +625,18 @@ function mostrarRegistros() {
             serialsHtml = registro.SerialPrestamo || "";
             pinsHtml = "-";
         } else if (registro.Tipo === "Acta De Devolucion") {
-            marcasHtml = "-";
-            modelosHtml = registro.ModeloDevolucion || "";
-            serialsHtml = registro.SerialDevolucion || "";
-            pinsHtml = "-";
+            const equiposList = registro.equipos || [];
+            if (equiposList.length > 0) {
+                marcasHtml = equiposList.map(e => e.Equipo || "").join("<br>");
+                modelosHtml = equiposList.map(e => e.Modelo || "").join("<br>");
+                serialsHtml = equiposList.map(e => e.Serial || "").join("<br>");
+                pinsHtml = "-";
+            } else {
+                marcasHtml = registro.EquipoDevolucion || "-";
+                modelosHtml = registro.ModeloDevolucion || "";
+                serialsHtml = registro.SerialDevolucion || "";
+                pinsHtml = "-";
+            }
         } else {
             marcasHtml = registro.Marca || "";
             modelosHtml = registro.Modelo || "";
@@ -780,12 +871,24 @@ function generarPDF(index) {
             "-"
         ]);
     } else if (registro.Tipo === "Acta De Devolucion") {
-        bodyEquipos.push([
-            registro.EquipoDevolucion || "",
-            registro.ModeloDevolucion || "",
-            registro.SerialDevolucion || "",
-            "-"
-        ]);
+        const listaEquipos = registro.equipos || [];
+        if (listaEquipos.length > 0) {
+            listaEquipos.forEach(eq => {
+                bodyEquipos.push([
+                    eq.Equipo || eq.Dispositivo || "",
+                    eq.Modelo || "",
+                    eq.Serial || "",
+                    "-"
+                ]);
+            });
+        } else {
+            bodyEquipos.push([
+                registro.EquipoDevolucion || "",
+                registro.ModeloDevolucion || "",
+                registro.SerialDevolucion || "",
+                "-"
+            ]);
+        }
     }
 
     let colSpan = 5;
