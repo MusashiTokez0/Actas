@@ -497,7 +497,7 @@ formulario.addEventListener("submit", function (e) {
     // Limpiar estado de edición si aplica
     editingIndex = null;
     originalRegistroBackup = null;
-    if (btnCancelarEdicion) btnCancelarEdicion.style.display = 'none';
+    if (btnCancelarEdicion) btnCancelarEdicion.classList.add('hidden');
 
     formulario.reset();
     otraMarcaInput.style.display = "none";
@@ -666,7 +666,7 @@ function editarRegistro(index) {
     // Guardar backup profundo para restaurar si hay un error de tipeo
     originalRegistroBackup = JSON.parse(JSON.stringify(registro));
     poblarFormularioConRegistro(registro);
-    if (btnCancelarEdicion) btnCancelarEdicion.style.display = 'inline-block';
+    if (btnCancelarEdicion) btnCancelarEdicion.classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -770,7 +770,7 @@ function cancelarEdicion() {
     formulario.reset();
     equiposAdicionalesContainer.innerHTML = '';
     equiposAdicionalesContainer.style.display = 'none';
-    if (btnCancelarEdicion) btnCancelarEdicion.style.display = 'none';
+    if (btnCancelarEdicion) btnCancelarEdicion.classList.add('hidden');
     establecerFechaActual();
     generarNumeroActa();
 
