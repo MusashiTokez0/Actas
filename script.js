@@ -1,8 +1,12 @@
 const formulario = document.getElementById("formulario");
 const tabla = document.getElementById("tabla-registros");
+const btnSubmit = formulario.querySelector("button[type='submit']");
 document
     .getElementById("btnExcel")
     .addEventListener("click", exportarExcel);
+
+let indiceEdicion = null;
+let correlativoEdicion = null;
 
 const sedeInput = document.getElementById("Sede");
 const fechaInput = document.getElementById("fecha");
@@ -11,6 +15,34 @@ const numeroActa = document.getElementById("numeroActa");
 function obtenerNumeroActa(registro) {
     return registro.numeroActa || "";
 }
+
+function extraerCorrelativoNumeroActa(numeroActa) {
+    if (!numeroActa) return null;
+    const partes = numeroActa.split("-");
+    if (partes.length < 2) return null;
+    const numero = parseInt(partes[1], 10);
+    return Number.isInteger(numero) ? numero : null;
+}
+
+function establecerValorSelectConOpcionPersonalizada(selectElement, actualValue, opcionPersonalizada, inputPersonalizado) {
+    const opcionExiste = Array.from(selectElement.options).some(option => option.value === actualValue);
+    if (opcionExiste) {
+        selectElement.value = actualValue;
+        if (inputPersonalizado) {
+            inputPersonalizado.style.display = "none";
+            inputPersonalizado.required = false;
+            inputPersonalizado.value = "";
+        }
+    } else {
+        selectElement.value = opcionPersonalizada;
+        if (inputPersonalizado) {
+            inputPersonalizado.style.display = "block";
+            inputPersonalizado.required = true;
+            inputPersonalizado.value = actualValue;
+        }
+    }
+}
+
 function generarNumeroActa() {
 
     const sede = sedeInput.value.trim();
@@ -32,8 +64,10 @@ function generarNumeroActa() {
     const mes = partes[1];
     const dia = partes[2];
 
-    // El correlativo será el número actual de registros + 1
-    const correlativo = registros.length + 1;
+    let correlativo = registros.length + 1;
+    if (indiceEdicion !== null && correlativoEdicion !== null) {
+        correlativo = correlativoEdicion;
+    }
 
     // Formato: [Letra][Mes][Año]-[Correlativo]
     const codigo = `${letra}${mes}${anio}-${correlativo}`;
@@ -461,7 +495,11 @@ formulario.addEventListener("submit", function (e) {
         observaciones: document.getElementById("observaciones").value
     };
 
-    registros.push(registro);
+    if (indiceEdicion !== null) {
+        registros[indiceEdicion] = registro;
+    } else {
+        registros.push(registro);
+    }
 
     localStorage.setItem("registros", JSON.stringify(registros));
 
@@ -477,6 +515,12 @@ formulario.addEventListener("submit", function (e) {
     equiposAdicionalesContainer.innerHTML = "";
     equiposAdicionalesContainer.style.display = "none";
     replicarCheckbox.checked = true;
+    indiceEdicion = null;
+    correlativoEdicion = null;
+
+    if (btnSubmit) {
+        btnSubmit.textContent = "Guardar Registro";
+    }
 
     const todosLosCampos = [...camposEquipo, ...camposComponentes, ...camposPrestamo, ...camposDevolucion];
     todosLosCampos.forEach(campo => campo.style.display = "none");
@@ -570,11 +614,98 @@ function mostrarRegistros() {
                         PDF
                     </button>
                 </td>
+                <td>
+                    <button class="edit-btn" onclick="editarRegistro(${indexOriginal})">
+                        Editar
+                    </button>
+                </td>
             </tr>
         `;
     });
 
     renderizarPaginacion(registrosFiltrados.length);
+}
+
+function editarRegistro(index) {
+    const registro = registros[index];
+    if (!registro) return;
+    indiceEdicion = index;
+    correlativoEdicion = extraerCorrelativoNumeroActa(registro.numeroActa);
+    llenarFormularioConRegistro(registro);
+    if (btnSubmit) {
+        btnSubmit.textContent = "Guardar cambios";
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function llenarFormularioConRegistro(registro) {
+    document.getElementById("nombre").value = registro.nombre || "";
+    document.getElementById("fecha").value = registro.fecha || "";
+    document.getElementById("Cargo").value = registro.Cargo || "";
+    document.getElementById("Sede").value = registro.Sede || "";
+    document.getElementById("Area").value = registro.Area || "";
+    document.getElementById("Tecnico").value = registro.Tecnico || "";
+
+    document.getElementById("Tipo").value = registro.Tipo || "";
+    document.getElementById("Tipo").dispatchEvent(new Event("change"));
+
+    const cantidad = registro.Tipo === "Acta De Entrega" ? (registro.equipos?.length || 1) : 1;
+    cantidadInput.value = cantidad;
+    replicarCheckbox.checked = false;
+    actualizarEquiposAdicionales();
+
+    if (registro.Tipo === "Acta De Entrega") {
+        establecerValorSelectConOpcionPersonalizada(dispositivoEntregaSelect, registro.DispositivoEntrega || "", "Otro", otroDispositivoEntregaInput);
+        dispositivoEntregaSelect.dispatchEvent(new Event("change"));
+        establecerValorSelectConOpcionPersonalizada(marcaSelect, registro.Marca || "", "Otra", otraMarcaInput);
+        document.getElementById("Modelo").value = registro.Modelo || "";
+        document.getElementById("Serial").value = registro.Serial || "";
+        document.getElementById("Pin").value = registro.Pin || "";
+        document.getElementById("nombreEquipo").value = registro.NombreEquipo || "";
+
+        const equipos = registro.equipos || [];
+        equipos.forEach((equipo, index) => {
+            if (index === 0) return;
+            const card = equiposAdicionalesContainer.querySelector(`.equipo-extra-card:nth-of-type(${index})`);
+            if (!card) return;
+            const selectDispositivo = card.querySelector(".dispositivo-extra");
+            const otroDispositivo = card.querySelector(".otro-dispositivo-extra-input");
+            establecerValorSelectConOpcionPersonalizada(selectDispositivo, equipo.Dispositivo || "", "Otro", otroDispositivo);
+            selectDispositivo.dispatchEvent(new Event("change"));
+            const selectMarca = card.querySelector(".marca-extra");
+            const otraMarca = card.querySelector(".otra-marca-extra-input");
+            establecerValorSelectConOpcionPersonalizada(selectMarca, equipo.Marca || "", "Otra", otraMarca);
+            selectMarca.dispatchEvent(new Event("change"));
+            card.querySelector(".modelo-extra").value = equipo.Modelo || "";
+            card.querySelector(".serial-extra").value = equipo.Serial || "";
+            card.querySelector(".pin-extra").value = equipo.Pin || "";
+            const nombreEquipoExtra = card.querySelector(".nombre-equipo-extra");
+            if (nombreEquipoExtra) {
+                nombreEquipoExtra.value = equipo.NombreEquipo || "";
+            }
+        });
+    }
+
+    if (registro.Tipo === "Acta Componentes") {
+        document.getElementById("dispositivo").value = registro.Dispositivo || "";
+        document.getElementById("modeloComponente").value = registro.ModeloComponente || "";
+        document.getElementById("serialComponente").value = registro.SerialComponente || "";
+    }
+
+    if (registro.Tipo === "Acta Prestamo") {
+        document.getElementById("fechaDevolucion").value = registro.FechaDevolucion || "";
+        document.getElementById("dispositivoPrestamo").value = registro.DispositivoPrestamo || "";
+        document.getElementById("serialPrestamo").value = registro.SerialPrestamo || "";
+    }
+
+    if (registro.Tipo === "Acta De Devolucion") {
+        document.getElementById("equipoDevolucion").value = registro.EquipoDevolucion || "";
+        document.getElementById("modeloDevolucion").value = registro.ModeloDevolucion || "";
+        document.getElementById("serialDevolucion").value = registro.SerialDevolucion || "";
+    }
+
+    numeroActa.value = registro.numeroActa || "";
+    document.getElementById("observaciones").value = registro.observaciones || "";
 }
 
 function renderizarPaginacion(totalRegistros) {

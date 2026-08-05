@@ -234,6 +234,19 @@ tr {
 
 }
 
+.edit-btn {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.edit-btn:hover {
+    background: #15803d;
+}
+
 .botones {
 
     margin-top: 20px;
