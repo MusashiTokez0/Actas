@@ -1127,7 +1127,7 @@ function generarPDF(index) {
         startY: doc.lastAutoTable.finalY + 15,
 
         head: [[{
-            content: "Aprobado por",
+            content: "Recepcionado por",
             colSpan: 2,
             styles: {
                 halign: "center",
