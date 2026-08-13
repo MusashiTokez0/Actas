@@ -901,12 +901,21 @@ function generarPDF(index) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
 
-    doc.text(
-        "Certifico que los elementos detallados en el presente documento me han sido entregados para mi cuidado y custodia.",
-        20,
-        38,
-        { maxWidth: 170 }
-    );
+    if (registro.Tipo === "Acta De Devolucion") {
+        doc.text(
+            "Con este documento se da conocimiento la devolucion, al área de Soporte Computacional, el (los) siguiente(s) equipo(s) entregados:",
+            20,
+            38,
+            { maxWidth: 170 }
+        );
+    } else {
+        doc.text(
+            "Certifico que los elementos detallados en el presente documento me han sido entregados para mi cuidado y custodia.",
+            20,
+            38,
+            { maxWidth: 170 }
+        );
+    }
 
     // ===== DATOS FUNCIONARIO =====
     doc.autoTable({
@@ -1112,6 +1121,7 @@ function generarPDF(index) {
     });
 
     // ===== FIRMAS =====
+    const isActaDevolucion = registro.Tipo === "Acta De Devolucion";
     doc.autoTable({
 
         startY: doc.lastAutoTable.finalY + 15,
@@ -1126,14 +1136,11 @@ function generarPDF(index) {
             }
         }]],
 
-        body: [
-            // Bastian Palma – static (kept for historic data)
+        body: isActaDevolucion ? [
+            [`Quién entrega\n${registro.Tecnico || ""}`, "\n\n\nFirma"]
+        ] : [
             ["Jefatura\nBASTIAN PALMA", "\n\n\nFirma"],
-
-            // Técnico que entrega – dynamic
             [`Quién entrega\n${registro.Tecnico || ""}`, "\n\n\nFirma"],
-
-            // Cliente que recibe
             [`Quién recepciona\n${registro.nombre}`, "\n\n\nFirma"]
         ],
 
@@ -1148,29 +1155,33 @@ function generarPDF(index) {
         theme: 'grid',
 
         didDrawCell: function (data) {
-            // We only care about the second column (the one that should contain the signature)
             if (data.column.index !== 1) return;
 
-            // Determine which signature we need
             let signature = null;
 
-            // Row 0 → Bastian (kept unchanged)
-            if (data.row.index === 0) {
-                signature = firmaBastian;
-            }
+            if (isActaDevolucion) {
+                if (data.row.index === 0) {
+                    const techName = registro.Tecnico?.trim();
+                    if (techName && firmaMap[techName]) {
+                        signature = firmaMap[techName];
+                    }
+                }
+            } else {
+                if (data.row.index === 0) {
+                    signature = firmaBastian;
+                }
 
-            // Row 1 → the selected technician
-            if (data.row.index === 1) {
-                const techName = registro.Tecnico?.trim();
-                if (techName && firmaMap[techName]) {
-                    signature = firmaMap[techName];
+                if (data.row.index === 1) {
+                    const techName = registro.Tecnico?.trim();
+                    if (techName && firmaMap[techName]) {
+                        signature = firmaMap[techName];
+                    }
                 }
             }
 
-            // If we have a signature, add it to the cell
             if (signature) {
                 const cell = data.cell;
-                const imgWidth = 25;           // keep the same size as before
+                const imgWidth = 25;
                 const imgHeight = 12;
                 const x = cell.x + (cell.width - imgWidth) / 2;
                 const y = cell.y + 4;
