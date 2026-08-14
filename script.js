@@ -1137,7 +1137,7 @@ function generarPDF(index) {
         }]],
 
         body: isActaDevolucion ? [
-            [`Quién entrega\n${registro.Tecnico || ""}`, "\n\n\nFirma"]
+                    [`Recepcionado por\n${registro.Tecnico || ""}`, "\n\n\nFirma"]
         ] : [
             ["Jefatura\nBASTIAN PALMA", "\n\n\nFirma"],
             [`Quién entrega\n${registro.Tecnico || ""}`, "\n\n\nFirma"],
