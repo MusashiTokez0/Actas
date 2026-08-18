@@ -601,6 +601,12 @@ formulario.addEventListener("submit", function (e) {
     indiceEdicion = null;
     correlativoEdicion = null;
 
+    // Make N° Acta readonly again after saving
+    const numeroActaInput = document.getElementById("numeroActa");
+    if (numeroActaInput) {
+        numeroActaInput.readOnly = true;
+    }
+
     if (btnSubmit) {
         btnSubmit.textContent = "Guardar Registro";
     }
@@ -723,6 +729,14 @@ function editarRegistro(index) {
     indiceEdicion = index;
     correlativoEdicion = extraerCorrelativoNumeroActa(registro.numeroActa);
     llenarFormularioConRegistro(registro);
+
+    // Allow editing of N° Acta while in edit mode
+    const numeroActaInput = document.getElementById("numeroActa");
+    if (numeroActaInput) {
+        numeroActaInput.readOnly = false;
+        numeroActaInput.focus();
+    }
+
     if (btnSubmit) {
         btnSubmit.textContent = "Guardar cambios";
     }
