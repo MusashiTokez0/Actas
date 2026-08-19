@@ -854,9 +854,42 @@ function renderizarPaginacion(totalRegistros) {
     contenedorPaginacion.appendChild(btnSiguiente);
 }
 
-function generarPDF(index) {
+async function generarPDF(index) {
 
     const registro = registros[index];
+
+    // Helper: load an image file from the repo as a data URL
+    async function loadImageDataURL(url) {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Failed to fetch ' + url + ' status:' + res.status);
+        const blob = await res.blob();
+        return await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    // Ensure the signature for "Claudio Muñoz" is available in firmaMap.
+    // The repo contains the image at img/Firma Claudio Munoz .png — try to load it if firmaMap entry is missing or malformed.
+    try {
+        if (typeof firmaMap !== 'undefined') {
+            const key = 'Claudio Muñoz';
+            const current = firmaMap[key];
+            if (!current || (typeof current === 'string' && current.startsWith('data:data:'))) {
+                try {
+                    const dataUrl = await loadImageDataURL('img/Firma Claudio Munoz .png');
+                    firmaMap[key] = dataUrl;
+                } catch (err) {
+                    // If fetch fails, just log and continue — PDF will use no signature for Claudio
+                    console.error('Failed to load signature image for Claudio Muñoz:', err);
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Error ensuring signature for Claudio Muñoz:', e);
+    }
 
     const { jsPDF } = window.jspdf;
 
