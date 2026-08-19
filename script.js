@@ -872,14 +872,14 @@ async function generarPDF(index) {
     }
 
     // Ensure the signature for "Claudio Muñoz" is available in firmaMap.
-    // The repo contains the image at img/Firma Claudio Munoz .png — try to load it if firmaMap entry is missing or malformed.
+    // The repo contains the image at img/Firma Claudio Munoz.png — try to load it if firmaMap entry is missing or malformed.
     try {
         if (typeof firmaMap !== 'undefined') {
             const key = 'Claudio Muñoz';
             const current = firmaMap[key];
             if (!current || (typeof current === 'string' && current.startsWith('data:data:'))) {
                 try {
-                    const dataUrl = await loadImageDataURL('img/Firma Claudio Munoz .png');
+                    const dataUrl = await loadImageDataURL('img/Firma Claudio Munoz.png');
                     firmaMap[key] = dataUrl;
                 } catch (err) {
                     // If fetch fails, just log and continue — PDF will use no signature for Claudio
