@@ -100,6 +100,10 @@ dispositivoEntregaSelect.addEventListener("change", function () {
     }
 
     const nombreEquipoDiv = nombreEquipoInput.parentElement;
+    const pinInput = document.getElementById("Pin");
+    const pinDiv = pinInput ? pinInput.parentElement : null;
+
+    // Mostrar nombre del equipo sólo para equipos tipo PC/Notebook/All-in-One
     if (this.value === "PC" || this.value === "Notebook" || this.value === "All-in-One") {
         nombreEquipoDiv.style.display = "block";
         nombreEquipoInput.required = true;
@@ -107,6 +111,20 @@ dispositivoEntregaSelect.addEventListener("change", function () {
         nombreEquipoDiv.style.display = "none";
         nombreEquipoInput.required = false;
         nombreEquipoInput.value = "";
+    }
+
+    // Ocultar el campo PIN cuando se seleccione Monitor o Impresora
+    if (this.value === "Monitor" || this.value === "Impresora") {
+        if (pinDiv) {
+            pinDiv.style.display = "none";
+            pinInput.required = false;
+            pinInput.value = "";
+        }
+    } else {
+        if (pinDiv) {
+            pinDiv.style.display = "block";
+            // No forzar required aquí: se maneja por validación del formulario si corresponde
+        }
     }
 });
 
@@ -133,11 +151,13 @@ function replicarValores() {
         const otraMarcaVal = otraMarcaInput.value;
         const modeloVal = document.getElementById("Modelo").value;
         const serialVal = document.getElementById("Serial").value;
+        const pinVal = document.getElementById("Pin").value;
 
         const dispositivosExtra = document.querySelectorAll(".dispositivo-extra");
         const marcasExtra = document.querySelectorAll(".marca-extra");
         const modelosExtra = document.querySelectorAll(".modelo-extra");
         const serialsExtra = document.querySelectorAll(".serial-extra");
+        const pinsExtra = document.querySelectorAll(".pin-extra");
 
         dispositivosExtra.forEach(el => {
             el.value = dispositivoVal;
@@ -168,6 +188,11 @@ function replicarValores() {
 
         serialsExtra.forEach(el => {
             el.value = serialVal;
+        });
+
+        // Replicar PIN en los equipos adicionales (si existen)
+        pinsExtra.forEach(el => {
+            el.value = pinVal;
         });
     }
 
@@ -313,6 +338,8 @@ function actualizarEquiposAdicionales() {
                 otroDispositivoExtra.value = "";
             }
 
+            const pinExtra = div.querySelector('.pin-extra');
+            // Mostrar nombre del equipo sólo para PC/Notebook/All-in-One
             if (this.value === "PC" || this.value === "Notebook" || this.value === "All-in-One") {
                 nombreEquipoExtraContainer.style.display = "block";
                 nombreEquipoExtraInput.required = true;
@@ -320,6 +347,19 @@ function actualizarEquiposAdicionales() {
                 nombreEquipoExtraContainer.style.display = "none";
                 nombreEquipoExtraInput.required = false;
                 nombreEquipoExtraInput.value = "";
+            }
+
+            // Ocultar PIN para Monitor o Impresora
+            if (this.value === "Monitor" || this.value === "Impresora") {
+                if (pinExtra && pinExtra.parentElement) {
+                    pinExtra.parentElement.style.display = "none";
+                    const inp = div.querySelector('.pin-extra');
+                    if (inp) inp.value = "";
+                }
+            } else {
+                if (pinExtra && pinExtra.parentElement) {
+                    pinExtra.parentElement.style.display = "block";
+                }
             }
         });
 
@@ -409,12 +449,28 @@ tipoSelect.addEventListener("change", function () {
         });
 
         const dispVal = dispositivoEntregaSelect.value;
+        const pinInput = document.getElementById("Pin");
+        const pinDiv = pinInput ? pinInput.parentElement : null;
+
         if (dispVal === "PC" || dispVal === "Notebook" || dispVal === "All-in-One") {
             nombreEquipoInput.parentElement.style.display = "block";
             nombreEquipoInput.required = true;
         } else {
             nombreEquipoInput.parentElement.style.display = "none";
             nombreEquipoInput.required = false;
+        }
+
+        // Ocultar PIN para Monitor o Impresora
+        if (dispVal === "Monitor" || dispVal === "Impresora") {
+            if (pinDiv) {
+                pinDiv.style.display = "none";
+                pinInput.required = false;
+                pinInput.value = "";
+            }
+        } else {
+            if (pinDiv) {
+                pinDiv.style.display = "block";
+            }
         }
     } else {
         nombreEquipoInput.required = false;
@@ -996,10 +1052,35 @@ async function generarPDF(index) {
     let bodyEquipos = [];
     if (registro.Tipo === "Acta De Entrega") {
         const listaEquipos = registro.equipos || [];
-        if (listaEquipos.length > 0) {
-            listaEquipos.forEach(eq => {
+        // Si no hay lista (registro antiguo), crear un array con el equipo principal para simplificar la lógica
+        const lista = listaEquipos.length > 0 ? listaEquipos : [{
+            Dispositivo: registro.DispositivoEntrega || "PC",
+            Marca: registro.Marca || "",
+            Modelo: registro.Modelo || "",
+            NombreEquipo: registro.NombreEquipo || "",
+            Serial: registro.Serial || "",
+            Pin: registro.Pin || ""
+        }];
+
+        // Si alguno de los dispositivos es Monitor o Impresora => ocultar columnas Nombre Equipo y PIN en el PDF
+        const skipNameAndPin = lista.some(eq => {
+            const d = (eq.Dispositivo || eq.Equipo || "").toString().trim();
+            return d === "Monitor" || d === "Impresora";
+        });
+
+        if (skipNameAndPin) {
+            lista.forEach(eq => {
                 bodyEquipos.push([
-                    eq.Dispositivo || "PC",
+                    eq.Dispositivo || eq.Equipo || "PC",
+                    eq.Marca || "",
+                    eq.Modelo || "",
+                    eq.Serial || ""
+                ]);
+            });
+        } else {
+            lista.forEach(eq => {
+                bodyEquipos.push([
+                    eq.Dispositivo || eq.Equipo || "PC",
                     eq.Marca || "",
                     eq.Modelo || "",
                     eq.NombreEquipo || "",
@@ -1007,17 +1088,34 @@ async function generarPDF(index) {
                     eq.Pin || ""
                 ]);
             });
-        } else {
-            // Compatibilidad con registros antiguos
-            bodyEquipos.push([
-                registro.DispositivoEntrega || "PC",
-                registro.Marca || "",
-                registro.Modelo || "",
-                registro.NombreEquipo || "",
-                registro.Serial || "",
-                registro.Pin || ""
-            ]);
         }
+
+        // Construir headers dinámicamente según skipNameAndPin
+        if (lista.length > 0 && skipNameAndPin) {
+            // Equipo, Marca, Modelo, Serial
+            var colSpanLocal = 4;
+            var headersLocal = [
+                { content: "Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+                { content: "Marca", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+                { content: "Modelo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+                { content: "Serial", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } }
+            ];
+        } else {
+            var colSpanLocal = 6;
+            var headersLocal = [
+                { content: "Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+                { content: "Marca", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+                { content: "Modelo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+                { content: "Nombre Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+                { content: "Serial", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+                { content: "PIN", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } }
+            ];
+        }
+
+        // Exponer variables para uso posterior al crear la tabla
+        var _equipos_colSpan = colSpanLocal;
+        var _equipos_headers = headersLocal;
+
     } else if (registro.Tipo === "Acta Componentes") {
         bodyEquipos.push([
             registro.Dispositivo || "",
@@ -1026,6 +1124,14 @@ async function generarPDF(index) {
             registro.SerialComponente || "",
             "-"
         ]);
+        var _equipos_colSpan = 5;
+        var _equipos_headers = [
+            { content: "Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "Marca", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "Modelo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "Serial", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "PIN", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } }
+        ];
     } else if (registro.Tipo === "Acta Prestamo") {
         bodyEquipos.push([
             registro.DispositivoPrestamo || "",
@@ -1034,6 +1140,14 @@ async function generarPDF(index) {
             registro.SerialPrestamo || "",
             "-"
         ]);
+        var _equipos_colSpan = 5;
+        var _equipos_headers = [
+            { content: "Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "Marca", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "Modelo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "Serial", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "PIN", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } }
+        ];
     } else if (registro.Tipo === "Acta De Devolucion") {
         const listaEquipos = registro.equipos || [];
         if (listaEquipos.length > 0) {
@@ -1053,36 +1167,24 @@ async function generarPDF(index) {
                 "-"
             ]);
         }
+        var _equipos_colSpan = 4;
+        var _equipos_headers = [
+            { content: "Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "Modelo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "Serial", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "PIN", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } }
+        ];
     }
 
-    let colSpan = 5;
-    let headers = [
+    // Normalizar variables si no fueron establecidas por Acta De Entrega
+    let colSpan = typeof _equipos_colSpan !== 'undefined' ? _equipos_colSpan : 5;
+    let headers = typeof _equipos_headers !== 'undefined' ? _equipos_headers : [
         { content: "Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
         { content: "Marca", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
         { content: "Modelo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
         { content: "Serial", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
         { content: "PIN", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } }
     ];
-
-    if (registro.Tipo === "Acta De Entrega") {
-        colSpan = 6;
-        headers = [
-            { content: "Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "Marca", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "Modelo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "Nombre Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "Serial", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "PIN", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } }
-        ];
-    } else if (registro.Tipo === "Acta De Devolucion") {
-        colSpan = 4;
-        headers = [
-            { content: "Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "Modelo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "Serial", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "PIN", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } }
-        ];
-    }
 
     doc.autoTable({
         startY: doc.lastAutoTable.finalY + 5,
