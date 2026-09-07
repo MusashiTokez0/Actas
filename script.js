@@ -190,9 +190,24 @@ function replicarValores() {
             el.value = serialVal;
         });
 
-        // Replicar PIN en los equipos adicionales (si existen)
         pinsExtra.forEach(el => {
             el.value = pinVal;
+        });
+    }
+
+    if (tipo === "Acta Componentes") {
+        const dispositivoVal = document.getElementById("dispositivo").value;
+        const modeloVal = document.getElementById("modeloComponente").value;
+        const serialVal = document.getElementById("serialComponente").value;
+
+        document.querySelectorAll(".componente-extra").forEach(el => {
+            el.value = dispositivoVal;
+        });
+        document.querySelectorAll(".modelo-componente-extra").forEach(el => {
+            el.value = modeloVal;
+        });
+        document.querySelectorAll(".serial-componente-extra").forEach(el => {
+            el.value = serialVal;
         });
     }
 
@@ -247,6 +262,29 @@ function actualizarEquiposAdicionales() {
                     <div>
                         <label>Serial</label>
                         <input type="text" class="serial-devolucion-extra" data-index="${i}" required>
+                    </div>
+                </div>
+            `;
+        } else if (tipo === "Acta Componentes") {
+            div.innerHTML = `
+                <h3>Componente ${i}</h3>
+                <div class="grid">
+                    <div>
+                        <label>Dispositivo</label>
+                        <select class="componente-extra" data-index="${i}" required>
+                            <option value="" disabled selected>Seleccione un dispositivo</option>
+                            <option value="Camara web">Camara web</option>
+                            <option value="Jabra">Jabra</option>
+                            <option value="Auricular">Auricular</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Modelo</label>
+                        <input type="text" class="modelo-componente-extra" data-index="${i}" required>
+                    </div>
+                    <div>
+                        <label>Serial</label>
+                        <input type="text" class="serial-componente-extra" data-index="${i}" required>
                     </div>
                 </div>
             `;
@@ -308,6 +346,23 @@ function actualizarEquiposAdicionales() {
 
         if (tipo === "Acta De Devolucion") {
             const inputs = div.querySelectorAll("input");
+            inputs.forEach(input => {
+                input.addEventListener("input", function () {
+                    if (replicarCheckbox.checked) {
+                        replicarCheckbox.checked = false;
+                    }
+                });
+                input.addEventListener("change", function () {
+                    if (replicarCheckbox.checked) {
+                        replicarCheckbox.checked = false;
+                    }
+                });
+            });
+            continue;
+        }
+
+        if (tipo === "Acta Componentes") {
+            const inputs = div.querySelectorAll("input, select");
             inputs.forEach(input => {
                 input.addEventListener("input", function () {
                     if (replicarCheckbox.checked) {
@@ -460,7 +515,6 @@ tipoSelect.addEventListener("change", function () {
             nombreEquipoInput.required = false;
         }
 
-        // Ocultar PIN para Monitor o Impresora
         if (dispVal === "Monitor" || dispVal === "Impresora") {
             if (pinDiv) {
                 pinDiv.style.display = "none";
@@ -476,6 +530,16 @@ tipoSelect.addEventListener("change", function () {
         nombreEquipoInput.required = false;
         if (this.value === "Acta Componentes") {
             camposComponentes.forEach(campo => campo.style.display = "block");
+            cantidadInput.parentElement.style.display = "block";
+            const cantidad = parseInt(cantidadInput.value) || 1;
+            if (cantidad > 1) {
+                equiposAdicionalesContainer.style.display = "block";
+                document.querySelector(".replicar-container").style.display = "flex";
+            } else {
+                equiposAdicionalesContainer.style.display = "none";
+                document.querySelector(".replicar-container").style.display = "none";
+            }
+            actualizarEquiposAdicionales();
         } else if (this.value === "Acta Prestamo") {
             camposPrestamo.forEach(campo => campo.style.display = "block");
         } else if (this.value === "Acta De Devolucion") {
@@ -577,6 +641,28 @@ formulario.addEventListener("submit", function (e) {
                 });
             });
         }
+    } else if (tipo === "Acta Componentes") {
+        const cantidad = parseInt(cantidadInput.value) || 1;
+        equipos.push({
+            Dispositivo: document.getElementById("dispositivo").value,
+            Modelo: document.getElementById("modeloComponente").value,
+            Serial: document.getElementById("serialComponente").value
+        });
+
+        if (cantidad > 1) {
+            document.querySelectorAll(".componente-extra").forEach((dispositivoInput, index) => {
+                const modeloInput = document.querySelectorAll(".modelo-componente-extra")[index];
+                const serialInput = document.querySelectorAll(".serial-componente-extra")[index];
+
+                if (dispositivoInput.value || (modeloInput && modeloInput.value) || (serialInput && serialInput.value)) {
+                    equipos.push({
+                        Dispositivo: dispositivoInput.value,
+                        Modelo: modeloInput ? modeloInput.value : "",
+                        Serial: serialInput ? serialInput.value : ""
+                    });
+                }
+            });
+        }
     } else if (tipo === "Acta De Devolucion") {
         const cantidad = parseInt(cantidadInput.value) || 1;
         equipos.push({
@@ -600,7 +686,6 @@ formulario.addEventListener("submit", function (e) {
             });
         }
     }
-
     const registro = {
         nombre: document.getElementById("nombre").value,
         fecha: document.getElementById("fecha").value,
@@ -721,10 +806,18 @@ function mostrarRegistros() {
                 pinsHtml = registro.Pin || "";
             }
         } else if (registro.Tipo === "Acta Componentes") {
-            marcasHtml = "-";
-            modelosHtml = registro.ModeloComponente || "";
-            serialsHtml = registro.SerialComponente || "";
-            pinsHtml = "-";
+            const equiposList = registro.equipos || [];
+            if (equiposList.length > 0) {
+                marcasHtml = equiposList.map(e => e.Dispositivo || "").join("<br>");
+                modelosHtml = equiposList.map(e => e.Modelo || "").join("<br>");
+                serialsHtml = equiposList.map(e => e.Serial || "").join("<br>");
+                pinsHtml = "-";
+            } else {
+                marcasHtml = registro.Dispositivo || "-";
+                modelosHtml = registro.ModeloComponente || "";
+                serialsHtml = registro.SerialComponente || "";
+                pinsHtml = "-";
+            }
         } else if (registro.Tipo === "Acta Prestamo") {
             marcasHtml = "-";
             modelosHtml = "-";
@@ -810,7 +903,9 @@ function llenarFormularioConRegistro(registro) {
     document.getElementById("Tipo").value = registro.Tipo || "";
     document.getElementById("Tipo").dispatchEvent(new Event("change"));
 
-    const cantidad = registro.Tipo === "Acta De Entrega" ? (registro.equipos?.length || 1) : 1;
+    const cantidad = ["Acta De Entrega", "Acta Componentes"].includes(registro.Tipo)
+        ? (registro.equipos?.length || 1)
+        : 1;
     cantidadInput.value = cantidad;
     replicarCheckbox.checked = false;
     actualizarEquiposAdicionales();
@@ -851,6 +946,21 @@ function llenarFormularioConRegistro(registro) {
         document.getElementById("dispositivo").value = registro.Dispositivo || "";
         document.getElementById("modeloComponente").value = registro.ModeloComponente || "";
         document.getElementById("serialComponente").value = registro.SerialComponente || "";
+
+        const equipos = registro.equipos || [];
+        equipos.forEach((equipo, index) => {
+            if (index === 0) return;
+            const card = equiposAdicionalesContainer.querySelector(`.equipo-extra-card:nth-of-type(${index})`);
+            if (!card) return;
+            const selectDispositivo = card.querySelector(".componente-extra");
+            if (selectDispositivo) {
+                selectDispositivo.value = equipo.Dispositivo || "";
+            }
+            const modeloInput = card.querySelector(".modelo-componente-extra");
+            const serialInput = card.querySelector(".serial-componente-extra");
+            if (modeloInput) modeloInput.value = equipo.Modelo || "";
+            if (serialInput) serialInput.value = equipo.Serial || "";
+        });
     }
 
     if (registro.Tipo === "Acta Prestamo") {
@@ -1117,20 +1227,27 @@ async function generarPDF(index) {
         var _equipos_headers = headersLocal;
 
     } else if (registro.Tipo === "Acta Componentes") {
-        bodyEquipos.push([
-            registro.Dispositivo || "",
-            "-",
-            registro.ModeloComponente || "",
-            registro.SerialComponente || "",
-            "-"
-        ]);
-        var _equipos_colSpan = 5;
+        const listaEquipos = registro.equipos || [];
+        if (listaEquipos.length > 0) {
+            listaEquipos.forEach(eq => {
+                bodyEquipos.push([
+                    eq.Dispositivo || "",
+                    eq.Modelo || "",
+                    eq.Serial || ""
+                ]);
+            });
+        } else {
+            bodyEquipos.push([
+                registro.Dispositivo || "",
+                registro.ModeloComponente || "",
+                registro.SerialComponente || ""
+            ]);
+        }
+        var _equipos_colSpan = 3;
         var _equipos_headers = [
-            { content: "Equipo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "Marca", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
+            { content: "Dispositivo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
             { content: "Modelo", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "Serial", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } },
-            { content: "PIN", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } }
+            { content: "Serial", styles: { fillColor: [0, 55, 123], textColor: [255, 255, 255], halign: "center" } }
         ];
     } else if (registro.Tipo === "Acta Prestamo") {
         bodyEquipos.push([
