@@ -11,6 +11,7 @@ let correlativoEdicion = null;
 const sedeInput = document.getElementById("Sede");
 const fechaInput = document.getElementById("fecha");
 const numeroActa = document.getElementById("numeroActa");
+const campoNumeroActa = document.getElementById("campoNumeroActa");
 
 function obtenerNumeroActa(registro) {
     return registro.numeroActa || "";
@@ -482,11 +483,24 @@ const camposComponentes = document.querySelectorAll(".campo-componentes");
 const camposPrestamo = document.querySelectorAll(".campo-prestamo");
 const camposDevolucion = document.querySelectorAll(".campo-devolucion");
 
-tipoSelect.addEventListener("change", function () {
-    const todosLosCampos = [...camposEquipo, ...camposComponentes, ...camposPrestamo, ...camposDevolucion];
-    todosLosCampos.forEach(campo => campo.style.display = "none");
+function actualizarVisibilidadNumeroActa() {
+    if (!campoNumeroActa) return;
 
-    if (this.value === "Acta De Entrega") {
+    if (tipoSelect.value === "Acta De Devolucion") {
+        campoNumeroActa.style.display = "none";
+        numeroActa.value = "";
+        return;
+    }
+
+    campoNumeroActa.style.display = "block";
+}
+
+tipoSelect.addEventListener("change", function () {
+const todosLosCampos = [...camposEquipo, ...camposComponentes, ...camposPrestamo, ...camposDevolucion];
+todosLosCampos.forEach(campo => campo.style.display = "none");
+actualizarVisibilidadNumeroActa();
+
+if (this.value === "Acta De Entrega") {
         camposEquipo.forEach(campo => {
             if (campo === nombreEquipoInput.parentElement) {
                 return;
@@ -1079,9 +1093,11 @@ async function generarPDF(index) {
         tituloSuperior = "ACTA DEVOLUCIÓN";
     }
 
-    // Obtenemos el número y lo unimos al título
+    // Obtenemos el número y lo unimos al título, salvo en actas de devolución
     const numeroActaPDF = obtenerNumeroActa(registro);
-    const textoCompleto = `${tituloSuperior} N° ${numeroActaPDF}`;
+    const textoCompleto = registro.Tipo === "Acta De Devolucion"
+        ? tituloSuperior
+        : `${tituloSuperior} N° ${numeroActaPDF}`;
 
     // Lo posicionamos a la derecha para que coincida con el logo a la izquierda
     doc.text(textoCompleto, 195, 15, { align: "right" });
